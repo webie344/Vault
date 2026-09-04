@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no" />
+<title>Vault</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#0D1210">
+<link rel="icon" href="icons/icon-192.png" type="image/png">
+<link rel="apple-touch-icon" href="icons/icon-192.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Vault">
+</head>
+<body>
+
+<div id="app">
+
+  <!-- LOCK SCREEN -->
+  <section id="lock-screen" class="screen screen--lock" aria-live="polite">
+    <div class="lock-stage">
+      <div class="dial" id="dial">
+        <div class="dial__ring"></div>
+        <div class="dial__ring dial__ring--inner"></div>
+        <div class="dial__pin"></div>
+      </div>
+      <h1 class="lock-title">Vault</h1>
+      <p class="lock-sub">A private place for your photos and videos.</p>
+
+      <form id="auth-form" class="lock-form" novalidate>
+        <label class="field">
+          <span class="field__label">Email</span>
+          <input type="email" id="email-input" class="field__input" placeholder="you@example.com" autocomplete="email" required />
+        </label>
+        <label class="field">
+          <span class="field__label">Password</span>
+          <input type="password" id="password-input" class="field__input" placeholder="••••••••" autocomplete="current-password" minlength="6" required />
+        </label>
+        <button type="submit" class="btn btn--primary btn--full" id="auth-submit-btn">
+          <span class="btn__label">Unlock</span>
+        </button>
+        <button type="button" class="btn btn--ghost btn--full" id="toggle-auth-mode-btn">Create an account instead</button>
+      </form>
+    </div>
+  </section>
+
+  <!-- VAULT SCREEN -->
+  <section id="vault-screen" class="screen screen--vault screen--hidden">
+    <header class="vault-header">
+      <div class="vault-header__identity">
+        <span class="vault-header__eyebrow" id="item-count">Empty</span>
+        <h1 class="vault-header__title">Vault</h1>
+      </div>
+      <button class="icon-btn" id="logout-btn" aria-label="Lock vault">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M18 8l4 4-4 4"/><path d="M22 12H10"/></svg>
+      </button>
+    </header>
+
+    <main class="grid-wrap">
+      <div id="empty-state" class="empty-state">
+        <div class="empty-state__mark"></div>
+        <p class="empty-state__title">Nothing stored yet</p>
+        <p class="empty-state__sub">Add a photo or video to begin.</p>
+      </div>
+      <div id="grid" class="grid"></div>
+    </main>
+
+    <input type="file" id="file-input" accept="image/*,video/*" multiple hidden />
+    <button class="fab" id="upload-btn" aria-label="Add to vault">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- ALBUMS SCREEN -->
+  <section id="albums-screen" class="screen screen--vault screen--hidden">
+    <header class="vault-header">
+      <div class="vault-header__identity">
+        <span class="vault-header__eyebrow" id="album-count">No albums</span>
+        <h1 class="vault-header__title">Albums</h1>
+      </div>
+    </header>
+
+    <main class="grid-wrap">
+      <div id="albums-empty" class="empty-state">
+        <div class="empty-state__mark"></div>
+        <p class="empty-state__title">No albums yet</p>
+        <p class="empty-state__sub">Group photos into a set — lock it with a passcode if you want it private.</p>
+      </div>
+      <div id="albums-list" class="album-list"></div>
+    </main>
+
+    <button class="fab" id="new-album-btn" aria-label="New album">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- ALBUM DETAIL SCREEN -->
+  <section id="album-detail-screen" class="screen screen--vault screen--hidden">
+    <header class="vault-header">
+      <button class="icon-btn" id="album-back-btn" aria-label="Back to albums">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="vault-header__identity">
+        <span class="vault-header__eyebrow" id="album-detail-count">Empty</span>
+        <h1 class="vault-header__title" id="album-detail-title">Album</h1>
+      </div>
+      <button class="icon-btn" id="album-delete-btn" aria-label="Delete album">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>
+      </button>
+    </header>
+
+    <main class="grid-wrap">
+      <div id="album-detail-empty" class="empty-state">
+        <div class="empty-state__mark"></div>
+        <p class="empty-state__title">Nothing in this album yet</p>
+        <p class="empty-state__sub">Add a photo or video to begin.</p>
+      </div>
+      <div id="album-detail-grid" class="grid"></div>
+    </main>
+
+    <input type="file" id="album-file-input" accept="image/*,video/*" multiple hidden />
+    <button class="fab" id="album-upload-btn" aria-label="Add to album">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M12 5v14M5 12h14"/></svg>
+    </button>
+  </section>
+
+  <!-- ACCOUNT SCREEN -->
+  <section id="account-screen" class="screen screen--account screen--hidden">
+    <header class="vault-header">
+      <div class="vault-header__identity">
+        <span class="vault-header__eyebrow">Signed in</span>
+        <h1 class="vault-header__title">Account</h1>
+      </div>
+    </header>
+
+    <main class="account-body">
+      <div class="account-card">
+        <div class="account-avatar" id="account-avatar">?</div>
+        <p class="account-email" id="account-email">—</p>
+      </div>
+
+      <div class="stat-row">
+        <div class="stat">
+          <span class="stat__value" id="stat-items">0</span>
+          <span class="stat__label">Items</span>
+        </div>
+        <div class="stat">
+          <span class="stat__value" id="stat-albums">0</span>
+          <span class="stat__label">Albums</span>
+        </div>
+      </div>
+
+      <button class="list-row" id="open-settings-btn">
+        <span>Settings</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M9 18l6-6-6-6"/></svg>
+      </button>
+      <button class="list-row list-row--danger" id="account-signout-btn">
+        <span>Sign out</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 4H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8"/><path d="M18 8l4 4-4 4"/><path d="M22 12H10"/></svg>
+      </button>
+    </main>
+  </section>
+
+  <!-- SETTINGS SCREEN -->
+  <section id="settings-screen" class="screen screen--account screen--hidden">
+    <header class="vault-header">
+      <button class="icon-btn" id="settings-back-btn" aria-label="Back to account">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M15 19l-7-7 7-7"/></svg>
+      </button>
+      <div class="vault-header__identity">
+        <h1 class="vault-header__title">Settings</h1>
+      </div>
+    </header>
+
+    <main class="account-body">
+      <section class="settings-group">
+        <p class="settings-group__title">Change password</p>
+        <form id="password-form" class="lock-form" novalidate>
+          <label class="field">
+            <span class="field__label">Current password</span>
+            <input type="password" id="current-password-input" class="field__input" autocomplete="current-password" required />
+          </label>
+          <label class="field">
+            <span class="field__label">New password</span>
+            <input type="password" id="new-password-input" class="field__input" autocomplete="new-password" minlength="6" required />
+          </label>
+          <button type="submit" class="btn btn--primary btn--full" id="password-submit-btn">
+            <span class="btn__label">Update password</span>
+          </button>
+        </form>
+      </section>
+
+      <section class="settings-group settings-group--danger">
+        <p class="settings-group__title">Danger zone</p>
+        <p class="settings-group__hint">This permanently deletes your account and everything stored in your vault's records. Files already uploaded to Cloudinary are not removed automatically.</p>
+        <label class="field">
+          <span class="field__label">Confirm password</span>
+          <input type="password" id="delete-confirm-password" class="field__input" autocomplete="current-password" />
+        </label>
+        <button class="btn btn--danger btn--full" id="delete-account-btn">Delete account</button>
+      </section>
+    </main>
+  </section>
+
+  <!-- VIEWER -->
+  <div id="viewer" class="viewer viewer--hidden" aria-hidden="true">
+    <div class="viewer__backdrop" id="viewer-backdrop"></div>
+    <div class="viewer__stage">
+      <div class="viewer__media" id="viewer-media"></div>
+      <div class="viewer__bar">
+        <button class="icon-btn icon-btn--pale" id="download-btn" aria-label="Download">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M12 3v12"/><path d="M7 10l5 5 5-5"/><path d="M5 21h14"/></svg>
+        </button>
+        <button class="icon-btn icon-btn--pale" id="delete-btn" aria-label="Delete">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M4 7h16"/><path d="M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/><path d="M6 7l1 13a1 1 0 0 0 1 1h8a1 1 0 0 0 1-1l1-13"/></svg>
+        </button>
+        <button class="icon-btn icon-btn--pale" id="close-viewer-btn" aria-label="Close">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M6 6l12 12M18 6L6 18"/></svg>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- UPLOAD PROGRESS -->
+  <div id="upload-tray" class="upload-tray upload-tray--hidden">
+    <div class="upload-tray__row">
+      <svg class="upload-ring" viewBox="0 0 36 36">
+        <circle class="upload-ring__track" cx="18" cy="18" r="15.5"/>
+        <circle class="upload-ring__fill" id="upload-ring-fill" cx="18" cy="18" r="15.5"/>
+      </svg>
+      <div class="upload-tray__text">
+        <span id="upload-tray-title">Storing…</span>
+        <span id="upload-tray-sub" class="upload-tray__sub">0 of 0</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIRM DIALOG -->
+  <div id="confirm" class="confirm confirm--hidden">
+    <div class="confirm__panel">
+      <p class="confirm__title" id="confirm-title">Delete this item?</p>
+      <p class="confirm__sub" id="confirm-sub">This can't be undone.</p>
+      <div class="confirm__actions">
+        <button class="btn btn--ghost" id="confirm-cancel">Cancel</button>
+        <button class="btn btn--danger" id="confirm-ok">Delete</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- CREATE ALBUM SHEET -->
+  <div id="album-sheet" class="confirm confirm--hidden">
+    <div class="confirm__panel">
+      <p class="confirm__title">New album</p>
+      <form id="create-album-form" class="lock-form" novalidate>
+        <label class="field">
+          <span class="field__label">Album name</span>
+          <input type="text" id="album-name-input" class="field__input" placeholder="e.g. Trips" required />
+        </label>
+        <label class="toggle-row">
+          <span>Lock with a passcode</span>
+          <input type="checkbox" id="album-lock-toggle" />
+        </label>
+        <label class="field field--passcode" id="album-passcode-field">
+          <span class="field__label">4–6 digit passcode</span>
+          <input type="password" id="album-passcode-input" class="field__input field__input--code" inputmode="numeric" maxlength="6" placeholder="••••" />
+        </label>
+        <div class="confirm__actions">
+          <button type="button" class="btn btn--ghost" id="album-sheet-cancel">Cancel</button>
+          <button type="submit" class="btn btn--primary" id="album-sheet-create">Create</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- PASSCODE PROMPT SHEET -->
+  <div id="passcode-sheet" class="confirm confirm--hidden">
+    <div class="confirm__panel">
+      <p class="confirm__title" id="passcode-sheet-title">Enter passcode</p>
+      <p class="confirm__sub">This album is locked.</p>
+      <form id="passcode-form" class="lock-form" novalidate>
+        <input type="password" id="passcode-attempt-input" class="field__input field__input--code" inputmode="numeric" maxlength="6" placeholder="••••" />
+        <div class="confirm__actions">
+          <button type="button" class="btn btn--ghost" id="passcode-cancel">Cancel</button>
+          <button type="submit" class="btn btn--primary" id="passcode-submit">Unlock</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- TOASTS -->
+  <div id="toast-stack" class="toast-stack" aria-live="polite"></div>
+
+  <!-- TAB BAR -->
+  <nav class="tabbar" id="tabbar">
+    <button class="tab-btn is-active" id="tab-vault-btn" aria-label="Vault">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="9.5" r="1.8"/><path d="M21 15l-5-5-9 9"/></svg>
+      <span>Vault</span>
+    </button>
+    <button class="tab-btn" id="tab-albums-btn" aria-label="Albums">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="6" width="14" height="14" rx="2.5"/><path d="M7 6V4.5A1.5 1.5 0 0 1 8.5 3H19a2 2 0 0 1 2 2v12.5a1.5 1.5 0 0 1-1.5 1.5H18"/></svg>
+      <span>Albums</span>
+    </button>
+    <button class="tab-btn" id="tab-account-btn" aria-label="Account">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20c1.6-3.6 4.6-5.4 7.5-5.4s5.9 1.8 7.5 5.4"/></svg>
+      <span>Account</span>
+    </button>
+  </nav>
+
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="app.js"></script>
+</body>
+</html>
