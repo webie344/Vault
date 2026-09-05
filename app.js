@@ -7,16 +7,16 @@
 
 const CONFIG = {
   firebase: {
-    apiKey: "YOUR_FIREBASE_API_KEY",
-    authDomain: "YOUR_PROJECT.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT.firebasestorage.app",
-    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-    appId: "YOUR_APP_ID",
-  },
+  apiKey: "AIzaSyC9jF-ocy6HjsVzWVVlAyXW-4aIFgA79-A",
+    authDomain: "crypto-6517d.firebaseapp.com",
+    projectId: "crypto-6517d",
+    storageBucket: "crypto-6517d.firebasestorage.app",
+    messagingSenderId: "60263975159",
+    appId: "1:60263975159:web:bd53dcaad86d6ed9592bf2"
+},
   cloudinary: {
-    cloudName: "YOUR_CLOUD_NAME",
-    uploadPreset: "YOUR_UNSIGNED_UPLOAD_PRESET", // create an unsigned preset in Cloudinary settings
+    cloudName: "ddtdqrh1b",
+    uploadPreset: "profile-pictures", // create an unsigned preset in Cloudinary settings
   },
 };
 
