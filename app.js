@@ -7,16 +7,16 @@
 
 const CONFIG = {
   firebase: {
-  apiKey: "AIzaSyC9jF-ocy6HjsVzWVVlAyXW-4aIFgA79-A",
-    authDomain: "crypto-6517d.firebaseapp.com",
-    projectId: "crypto-6517d",
-    storageBucket: "crypto-6517d.firebasestorage.app",
-    messagingSenderId: "60263975159",
-    appId: "1:60263975159:web:bd53dcaad86d6ed9592bf2"
-},
+    apiKey: "YOUR_FIREBASE_API_KEY",
+    authDomain: "YOUR_PROJECT.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT.firebasestorage.app",
+    messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
+    appId: "YOUR_APP_ID",
+  },
   cloudinary: {
-    cloudName: "ddtdqrh1b",
-    uploadPreset: "profile-pictures", // create an unsigned preset in Cloudinary settings
+    cloudName: "YOUR_CLOUD_NAME",
+    uploadPreset: "YOUR_UNSIGNED_UPLOAD_PRESET", // create an unsigned preset in Cloudinary settings
   },
 };
 
@@ -129,6 +129,7 @@ const statItems = el("stat-items");
 const statAlbums = el("stat-albums");
 const openSettingsBtn = el("open-settings-btn");
 const accountSignoutBtn = el("account-signout-btn");
+const accountInstallBtn = el("account-install-btn");
 
 const settingsBackBtn = el("settings-back-btn");
 const passwordForm = el("password-form");
@@ -136,6 +137,12 @@ const currentPasswordInput = el("current-password-input");
 const newPasswordInput = el("new-password-input");
 const deleteConfirmPassword = el("delete-confirm-password");
 const deleteAccountBtn = el("delete-account-btn");
+
+const loadingScreen = el("loading-screen");
+const installBanner = el("install-banner");
+const installAcceptBtn = el("install-accept-btn");
+const installDismissBtn = el("install-dismiss-btn");
+const ptrIndicator = el("ptr-indicator");
 
 /* ===========================================================
    TOASTS
@@ -237,11 +244,22 @@ auth.onAuthStateChanged(async (user) => {
   if (user) {
     lockScreen.classList.add("screen--hidden");
     unlockedAlbums = new Set();
-    switchTab("vault");
+
+    // Show a branded loader while the vault's data is fetched, instead of
+    // letting the grid flash empty before switchTab renders real content.
+    [vaultScreen, albumsScreen, albumDetailScreen, accountScreen, settingsScreen].forEach((s) =>
+      s.classList.add("screen--hidden")
+    );
+    tabbar.classList.add("screen--hidden");
+    loadingScreen.classList.remove("screen--hidden");
+
     await Promise.all([loadItems(), loadAlbums()]);
+
+    loadingScreen.classList.add("screen--hidden");
+    switchTab("vault");
     populateAccount();
   } else {
-    [vaultScreen, albumsScreen, albumDetailScreen, accountScreen, settingsScreen].forEach((s) =>
+    [vaultScreen, albumsScreen, albumDetailScreen, accountScreen, settingsScreen, loadingScreen].forEach((s) =>
       s.classList.add("screen--hidden")
     );
     tabbar.classList.add("screen--hidden");
@@ -848,3 +866,137 @@ deleteAccountBtn.addEventListener("click", async () => {
     deleteAccountBtn.disabled = false;
   }
 });
+
+/* ===========================================================
+   PWA — install prompt
+   Chrome no longer shows its own install banner automatically;
+   it fires 'beforeinstallprompt' and expects the page to offer
+   its own UI, then call .prompt() when the person chooses to.
+   =========================================================== */
+let deferredInstallPrompt = null;
+let installDismissedThisSession = false;
+
+window.addEventListener("beforeinstallprompt", (e) => {
+  e.preventDefault();
+  deferredInstallPrompt = e;
+  accountInstallBtn.classList.remove("list-row--hidden");
+  if (!installDismissedThisSession && currentUser) {
+    installBanner.classList.remove("install-banner--hidden");
+  }
+});
+
+async function runInstallPrompt() {
+  if (!deferredInstallPrompt) return;
+  deferredInstallPrompt.prompt();
+  await deferredInstallPrompt.userChoice;
+  deferredInstallPrompt = null;
+  installBanner.classList.add("install-banner--hidden");
+}
+
+installAcceptBtn.addEventListener("click", runInstallPrompt);
+accountInstallBtn.addEventListener("click", runInstallPrompt);
+
+installDismissBtn.addEventListener("click", () => {
+  installDismissedThisSession = true;
+  installBanner.classList.add("install-banner--hidden");
+});
+
+window.addEventListener("appinstalled", () => {
+  deferredInstallPrompt = null;
+  installBanner.classList.add("install-banner--hidden");
+  accountInstallBtn.classList.add("list-row--hidden");
+  toast("Vault installed");
+});
+
+/* ===========================================================
+   PULL TO REFRESH
+   Chrome's native pull-to-refresh reloads the whole page (loses
+   in-memory state, feels generic). overscroll-behavior-y:contain
+   in the CSS suppresses that; this replaces it with an in-app
+   gesture that just re-fetches the current screen's data.
+   =========================================================== */
+let ptrStartY = null;
+let ptrPulling = false;
+let ptrRefreshing = false;
+const PTR_THRESHOLD = 64;
+
+function anyOverlayOpen() {
+  return (
+    !viewer.classList.contains("viewer--hidden") ||
+    !confirmEl.classList.contains("confirm--hidden") ||
+    !albumSheet.classList.contains("confirm--hidden") ||
+    !passcodeSheet.classList.contains("confirm--hidden") ||
+    !loadingScreen.classList.contains("screen--hidden")
+  );
+}
+
+document.addEventListener(
+  "touchstart",
+  (e) => {
+    if (!currentUser || anyOverlayOpen() || ptrRefreshing) return;
+    if (window.scrollY <= 0) {
+      ptrStartY = e.touches[0].clientY;
+      ptrPulling = true;
+    }
+  },
+  { passive: true }
+);
+
+document.addEventListener(
+  "touchmove",
+  (e) => {
+    if (!ptrPulling || ptrStartY === null) return;
+    const dy = e.touches[0].clientY - ptrStartY;
+    if (dy <= 0) return;
+    if (window.scrollY > 0) {
+      ptrPulling = false;
+      return;
+    }
+    e.preventDefault();
+    const dist = Math.min(dy * 0.5, 90);
+    ptrIndicator.style.transform = `translateX(-50%) translateY(${dist - 12}px)`;
+    ptrIndicator.style.opacity = String(Math.min(dist / 50, 1));
+    ptrIndicator.classList.toggle("ptr-ready", dist >= PTR_THRESHOLD);
+  },
+  { passive: false }
+);
+
+document.addEventListener("touchend", async () => {
+  if (!ptrPulling) return;
+  const shouldRefresh = ptrIndicator.classList.contains("ptr-ready");
+  ptrPulling = false;
+  ptrStartY = null;
+
+  if (shouldRefresh) {
+    ptrRefreshing = true;
+    ptrIndicator.classList.add("ptr-spinning");
+    ptrIndicator.style.transform = "translateX(-50%) translateY(18px)";
+    ptrIndicator.style.opacity = "1";
+    await refreshCurrentView();
+    ptrIndicator.classList.remove("ptr-spinning", "ptr-ready");
+    ptrRefreshing = false;
+  }
+
+  ptrIndicator.style.transform = "translateX(-50%) translateY(-50px)";
+  ptrIndicator.style.opacity = "0";
+});
+
+async function refreshCurrentView() {
+  try {
+    if (activeAlbumId) {
+      await loadItems();
+      renderGrid(albumDetailGrid, albumDetailEmpty, albumDetailCount, itemsForAlbum(activeAlbumId));
+    } else if (activeTab === "albums") {
+      await Promise.all([loadAlbums(), loadItems()]);
+      renderAlbums();
+    } else if (activeTab === "vault") {
+      await loadItems();
+      renderGrid(grid, emptyState, itemCount, rootItems());
+    } else {
+      await Promise.all([loadItems(), loadAlbums()]);
+      populateAccount();
+    }
+  } catch (err) {
+    toast("Couldn't refresh", "error");
+  }
+}
